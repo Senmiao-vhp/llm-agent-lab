@@ -44,3 +44,13 @@ python -m unittest discover -s tests -v
 3. 拉取 PyPI 依赖**超时**（约 3 分钟仍停在 `Collecting` 或 `ReadTimeout`）：可换国内镜像或调大 pip 超时。
 
 若仍失败，请在 Gitee 打开 **「Python 构建」** 步骤的**完整日志**，查看第一条 `Error` / `Traceback`。
+
+### `getcwd: cannot access parent directories`
+
+表示 **当前 Shell 的工作目录（或其上级路径）在磁盘上已不存在**，常见于：
+
+1. **未先检出代码**就执行了 `bash scripts/ci_gitee.sh`（工作区为空或已被清理）。
+2. 流水线里自定义了 **「工作目录 / job-working-directory」** 指向了错误路径或已被删除的临时目录。
+3. 并发任务 / 清理脚本删掉了正在使用的目录。
+
+**处理**：在 Gitee Go 中保证 **第一步为检出仓库**，后续步骤使用 **默认工作区根目录**（即检出后的仓库根）；不要填写不存在的路径。安装依赖可用根目录的 `pip install -r requirements.txt`，测试示例：`python -m unittest discover -s app3/tests -p "test_*.py" -v`（在仓库根执行）。
