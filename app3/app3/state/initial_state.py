@@ -11,6 +11,10 @@ def build_initial_state(
     *,
     max_retries: int = 3,
 ) -> AgentState:
+    """
+    `max_retries` 保留为向后兼容的全局默认：未知 recoverable 子类型时
+    `errors.policy.get_max_retries` 可作 fallback。
+    """
     text = (user_input or "").strip()
     return {
         "user_input": text,
@@ -20,4 +24,9 @@ def build_initial_state(
         "error_class": "none",
         "last_error_message": None,
         "fatal_error": None,
+        "fatal_subtype": None,
+        "recoverable_subtype": None,
+        "recovery_attempts": {},
+        "pending_sleep_seconds": 0.0,
+        "last_error_envelope": None,
     }

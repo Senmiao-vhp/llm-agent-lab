@@ -1,35 +1,15 @@
-# app3 llm-agent-lab
+# app3
 
-学习导向的 **LangGraph** + **LangChain 工具**（技能）。
+学习型 LangGraph 智能体骨架：`StateGraph` + LangChain Tools、`MemorySaver`、**fatal/recoverable 子类型**与按子类型的重试 + **`delay` 指数退避**。
 
-## 安装
+详细设计与字段说明见 [`STABILITY_REVIEW.md`](STABILITY_REVIEW.md)。
 
 ```bash
-cd llm-agent-lab/app3
 pip install -e .
+python -m unittest discover -s tests -v
 ```
 
-## 运行
+环境变量（可选）：
 
-```bash
-python -m app3 "你的问题"
-```
-
-没有 `OPENAI_API_KEY` 时，图会在 `parse` 后停止，并在状态中设置 `fatal_error`（按设计）。
-
-## 项目结构
-
-| 路径 | 功能 |
-|------|------|
-| `app3/graph/` | `StateGraph` (`builder.py`), `edges.py`, `constants.py`, `context.py` |
-| `app3/state/` | `AgentState`, `build_initial_state` |
-| `app3/nodes/` | 节点存根 (`parse` … `explain`, `handle_error`) |
-| `app3/skills/` | GIS 占位符工具 |
-| `app3/runtime/` | `GraphSession.invoke` / `stream` |
-
-
-## 测试
-
-```bash
-python -m unittest discover -s tests -p "test_*.py" -v
-```
+- `APP3_BACKOFF_MAX_SECONDS`：单次退避上限（秒），默认 120  
+- `APP3_BACKOFF_JITTER_RATIO`：相对抖动的比例，默认 0.12  

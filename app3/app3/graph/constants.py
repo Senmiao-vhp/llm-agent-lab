@@ -11,6 +11,7 @@ class NodeName:
     ACT = "act"
     EXPLAIN = "explain"
     HANDLE_ERROR = "handle_error"
+    DELAY = "delay"
 
 
 class RouteKey:
@@ -23,4 +24,5 @@ class RouteKey:
     ACT = "act"
     EXPLAIN = "explain"
     HANDLE_ERROR = "handle_error"
+    DELAY = "delay"
     END = "end"

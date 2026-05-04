@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from app3.errors.taxonomy import FatalSubtype
 from app3.graph.context import GraphContext
 from app3.nodes.base import NodePatch
-from app3.state.agent_state import AgentState
+from app3.state.agent_state import AgentState, ErrorClass
 
 
 def parse_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
@@ -15,6 +16,8 @@ def parse_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
         return {
             "phase": "parse",
             "fatal_error": "OPENAI_API_KEY is not set (or LLM factory failed).",
+            "fatal_subtype": FatalSubtype.CONFIG.value,
+            "error_class": ErrorClass.FATAL,
         }
     # TODO: 实现 ctx.llm.with_structured_output(...) -> parse_result
     # TODO: 在 LLMInvocationError 时根据策略设置可恢复/致命错误字段

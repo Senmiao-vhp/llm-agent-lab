@@ -17,6 +17,7 @@ class TestGraphSmoke(unittest.TestCase):
             out = session.invoke("hello")
             self.assertIn("fatal_error", out)
             self.assertIsNotNone(out.get("fatal_error"))
+            self.assertEqual(out.get("fatal_subtype"), "fatal_config")
         finally:
             if old is not None:
                 os.environ["OPENAI_API_KEY"] = old

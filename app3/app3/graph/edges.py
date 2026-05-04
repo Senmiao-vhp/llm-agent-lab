@@ -29,11 +29,14 @@ def route_after_act(state: AgentState) -> Literal["explain", "handle_error", "en
     return RouteKey.EXPLAIN
 
 
-def route_after_error(state: AgentState) -> Literal["plan", "end"]:
+def route_after_handle_error(state: AgentState) -> Literal["delay", "plan", "end"]:
     if state.get("fatal_error"):
         return RouteKey.END
-    r = int(state.get("retry_count") or 0)
-    m = int(state.get("max_retries") or 3)
-    if r >= m:
-        return RouteKey.END
+    sleep_s = float(state.get("pending_sleep_seconds") or 0.0)
+    if sleep_s > 0:
+        return RouteKey.DELAY
     return RouteKey.PLAN
+
+
+# 兼容旧名称（测试或外部引用）
+route_after_error = route_after_handle_error

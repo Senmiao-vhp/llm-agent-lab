@@ -18,14 +18,12 @@ class ErrorClass:
 
 class AgentState(TypedDict, total=False):
     """
-    状态契约（开发阈值）：
+    状态契约：
 
-    - `user_input` + `messages[0]` 应通过 `app3.state.initial_state.build_initial_state`
-      在同一用户轮次中同时设置（保持基于token的和图规约器对齐）。
-    - `error_class` + `last_error_message` 在 act 后驱动 `graph/edges`。
-    - 路由字符串常量位于 `app3.graph.constants`（避免重复 `NodeName`）。
-    - `fatal_error` 设置时表示不可重试的配置/认证问题 —— 边应 END。
-    - `retry_count` 在进入恢复时在 `handle_error` 中递增；与 `max_retries` 比较。
+    - `user_input` + `messages[0]` 由 `build_initial_state` 同步。
+    - recoverable 路径：`recoverable_subtype`、`recovery_attempts`、按子类型的重试上限（见 `errors/policy`）。
+    - fatal 路径：`fatal_subtype`、`fatal_error`；不含 API Key、用尽恢复次数等。
+    - `pending_sleep_seconds`：指数退避，`delay` 节点执行 `sleep` 后清零。
     """
 
     messages: Annotated[list[AnyMessage], add_messages]
@@ -42,3 +40,8 @@ class AgentState(TypedDict, total=False):
     error_class: Literal["none", "recoverable", "fatal"]
     last_error_message: str | None
     fatal_error: str | None
+    fatal_subtype: str | None
+    recoverable_subtype: str | None
+    recovery_attempts: dict[str, int]
+    pending_sleep_seconds: float
+    last_error_envelope: dict[str, Any] | None
