@@ -32,4 +32,5 @@ def build_initial_state(
         "kg_context": None,
         "linked_entities": [],
         "kg_evidence": None,
+        "gis_context": None,
     }

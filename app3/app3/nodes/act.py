@@ -20,6 +20,40 @@ def _tools_by_name(ctx: GraphContext) -> dict[str, Any]:
     return {t.name: t for t in ctx.tools}
 
 
+def _merge_gis_fields(
+    state: AgentState,
+    tool_name: str,
+    output: Any,
+) -> dict[str, Any] | None:
+    prev = state.get("gis_context")
+    gis_context: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
+
+    if isinstance(output, dict):
+        if tool_name == "gis_execute_pipeline":
+            gis_context["pipeline"] = {
+                "success": output.get("success"),
+                "message": (str(output.get("message") or ""))[:1200],
+            }
+            data = output.get("data")
+            if isinstance(data, dict):
+                fo = data.get("final_output")
+                if isinstance(fo, dict) and fo.get("type"):
+                    gis_context["pipeline"]["final_type"] = fo.get("type")
+        elif tool_name == "resolve_geometry" and output.get("type") == "geometry":
+            gis_context["resolve_geometry"] = {
+                "region": output.get("region"),
+                "bbox": output.get("bbox"),
+                "source": (output.get("metadata") or {}).get("source"),
+            }
+        elif tool_name == "estimate_bbox_area":
+            gis_context["estimate_bbox_area"] = {
+                "area_mu": output.get("area_mu"),
+                "area_hectares": output.get("area_hectares"),
+            }
+
+    return gis_context if gis_context else None
+
+
 def _merge_kg_fields(
     state: AgentState,
     tool_name: str,
@@ -138,6 +172,11 @@ def act_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
         if kg_e is not None:
             patch_kg["kg_evidence"] = kg_e
             working["kg_evidence"] = kg_e
+
+        gis_c = _merge_gis_fields(working, name, output)
+        if gis_c is not None:
+            patch_kg["gis_context"] = gis_c
+            working["gis_context"] = gis_c
 
         content = _tool_output_for_state(output)
         try:

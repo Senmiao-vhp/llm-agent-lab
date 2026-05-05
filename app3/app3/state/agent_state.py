@@ -24,6 +24,7 @@ class AgentState(TypedDict, total=False):
     - recoverable 路径：`recoverable_subtype`、`recovery_attempts`、按子类型的重试上限（见 `errors/policy`）。
     - fatal 路径：`fatal_subtype`、`fatal_error`；不含 API Key、用尽恢复次数等。
     - 知识图谱：`kg_context`（工具/查询摘要）、`linked_entities`（规范化 id）、`kg_evidence`（形态 C 证据链）。
+    - GIS：`gis_context`（工具摘要；完整 pipeline 见 `gis_execute_pipeline` 结果）。
     """
 
     messages: Annotated[list[AnyMessage], add_messages]
@@ -48,3 +49,4 @@ class AgentState(TypedDict, total=False):
     kg_context: dict[str, Any] | None
     linked_entities: list[str]
     kg_evidence: list[dict[str, Any]] | None
+    gis_context: dict[str, Any] | None

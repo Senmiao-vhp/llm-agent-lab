@@ -108,6 +108,9 @@ class Settings:
     neo4j_chunk_vector_index: str = "chunk_embedding_index"
     embedding_api_key: str | None = None
     embedding_base_url: str | None = None
+    gee_project_id: str | None = None
+    gis_cache_dir: str | None = None
+    gis_use_cache: bool = True
 
     @staticmethod
     def from_env() -> "Settings":
@@ -126,4 +129,7 @@ class Settings:
             neo4j_chunk_vector_index=_env("NEO4J_CHUNK_VECTOR_INDEX") or "chunk_embedding_index",
             embedding_api_key=_env("EMBEDDING_API_KEY"),
             embedding_base_url=_env("EMBEDDING_BASE_URL"),
+            gee_project_id=_env("APP3_GEE_PROJECT_ID") or _env("GEE_PROJECT_ID"),
+            gis_cache_dir=_env("APP3_GIS_CACHE_DIR"),
+            gis_use_cache=_env_bool("APP3_GIS_USE_CACHE", default=True),
         )

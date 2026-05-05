@@ -15,6 +15,24 @@ from app3.nodes.base import NodePatch
 from app3.state.agent_state import AgentState, ErrorClass
 
 
+def _format_parse_block(parse_result: dict[str, Any] | None) -> str:
+    pr = parse_result or {}
+    queries = pr.get("queries") or []
+    if not queries:
+        return ""
+    lines: list[str] = []
+    for i, q in enumerate(queries[:5], 1):
+        lines.append(
+            f"子任务{i}: intent={q.get('intent')} | 区域={q.get('regions')} | "
+            f"年份={q.get('time_range')} | 对象={q.get('target_object')} | "
+            f"指标={q.get('specific_metrics')}"
+        )
+    src = pr.get("_parser_source")
+    if src:
+        lines.append(f"解析来源: {src}")
+    return "【结构化解析】\n" + "\n".join(lines) + "\n"
+
+
 def _serialize_tool_calls(ai: AIMessage) -> list[dict[str, Any]]:
     raw = getattr(ai, "tool_calls", None) or []
     out: list[dict[str, Any]] = []
@@ -46,8 +64,10 @@ def plan_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
         }
 
     user_text = (state.get("user_input") or "").strip()
+    parse_block = _format_parse_block(state.get("parse_result"))
     system_text = (
-        "你是 GIS 智能体的规划模型：根据用户输入，选择并参数化应调用的工具（知识图谱与 GIS）。\n\n"
+        "你是 GIS 智能体的规划模型：根据用户输入与下列结构化解析结果，选择并参数化应调用的工具（知识图谱与 GIS）。\n\n"
+        + parse_block
         + PLAN_KG_FIRST_SUPPLEMENT.strip()
     )
     messages = [
