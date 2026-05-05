@@ -1,0 +1,13 @@
+# 本地 GraphRAG 验证用 Neo4j 5.x（需 Docker Desktop 运行后执行）
+#   docker compose -f docker-compose.neo4j.yml up -d
+# 默认口令 neo4j / graphragtest → 与 scripts/run_graphrag_e2e.ps1 一致
+
+services:
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: neo4j-graphrag-app3
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/graphragtest

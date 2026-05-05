@@ -9,7 +9,12 @@ dependencies = [
   "langchain-core>=0.3.0",
   "langchain-openai>=0.2.0",
   "pydantic>=2.0",
+  "neo4j>=5.14.0,<6",
 ]
+
+[project.scripts]
+app3-embed-chunks = "app3.kg.embed_chunks:main"
+app3-validate-graphrag = "app3.kg.validate_graphrag:main"
 
 [project.optional-dependencies]
 dev = ["ruff>=0.6.0", "mypy>=1.10.0"]

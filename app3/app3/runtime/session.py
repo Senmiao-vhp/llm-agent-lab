@@ -11,6 +11,7 @@ from langchain_core.tools import BaseTool
 from app3.config import Settings
 from app3.graph.builder import build_compiled_graph
 from app3.graph.context import GraphContext
+from app3.kg.neo4j_client import build_neo4j_client_from_settings
 from app3.llm.errors import LLMConfigError
 from app3.llm.factory import build_chat_model
 from app3.skills.registry import build_default_skill_tools
@@ -27,13 +28,32 @@ class GraphSession:
     ) -> None:
         self.settings = settings
         self.thread_id = thread_id or str(uuid4())
-        tool_list: Sequence[BaseTool] = tools if tools is not None else build_default_skill_tools()
+        neo_client = build_neo4j_client_from_settings(settings)
+        tool_list: Sequence[BaseTool] = (
+            tools
+            if tools is not None
+            else build_default_skill_tools(settings, neo4j_client=neo_client)
+        )
         try:
             llm = build_chat_model(settings)
         except LLMConfigError:
             llm = None
-        self._ctx = GraphContext(settings=settings, tools=tuple(tool_list), llm=llm)
+        self._ctx = GraphContext(
+            settings=settings,
+            tools=tuple(tool_list),
+            llm=llm,
+            neo4j_client=neo_client,
+        )
         self._graph = build_compiled_graph(self._ctx)
+
+    def close(self) -> None:
+        """释放 Neo4j Driver 等长生命周期资源。"""
+        client = self._ctx.neo4j_client
+        if client is not None:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
 
     def invoke(self, user_input: str) -> dict[str, Any]:
         state = build_initial_state(user_input)

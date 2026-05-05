@@ -14,9 +14,18 @@ from app3.state.agent_state import AgentState
 
 class TestDelayNode(unittest.TestCase):
     def test_sleeps_and_clears(self) -> None:
+        settings = Settings(
+            openai_api_key=None,
+            openai_base_url=None,
+            default_chat_model="x",
+            neo4j_uri=None,
+            neo4j_user=None,
+            neo4j_password=None,
+            neo4j_database=None,
+        )
         ctx = GraphContext(
-            settings=Settings(None, None, "x"),
-            tools=tuple(build_default_skill_tools()),
+            settings=settings,
+            tools=tuple(build_default_skill_tools(settings)),
             llm=None,
         )
         st: AgentState = {"pending_sleep_seconds": 0.5}

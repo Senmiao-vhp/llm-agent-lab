@@ -74,6 +74,29 @@ def classify_exception(exc: BaseException, *, source: str = "unknown") -> ErrorE
             cause=cause,
         )
 
+    # Neo4j / Bolt（可恢复：连接、会话、瞬时错误）
+    try:
+        from neo4j.exceptions import ServiceUnavailable, SessionExpired, TransientError
+
+        if isinstance(exc, (ServiceUnavailable, SessionExpired)):
+            return ErrorEnvelope(
+                kind="recoverable",
+                subtype=RecoverableSubtype.NETWORK.value,
+                message=msg,
+                source=source,
+                cause=cause,
+            )
+        if isinstance(exc, TransientError):
+            return ErrorEnvelope(
+                kind="recoverable",
+                subtype=RecoverableSubtype.TIMEOUT.value,
+                message=msg,
+                source=source,
+                cause=cause,
+            )
+    except ImportError:
+        pass
+
     # 2. 系统级网络错误（可恢复）
     if isinstance(exc, OSError) and exc.errno is not None:
         if exc.errno in {

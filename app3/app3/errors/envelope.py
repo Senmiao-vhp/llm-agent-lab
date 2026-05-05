@@ -16,9 +16,11 @@ class ErrorEnvelope:
     cause: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
+    # 序列化
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    # 反序列化
     @staticmethod
     def from_dict(d: dict[str, Any]) -> "ErrorEnvelope":
         return ErrorEnvelope(

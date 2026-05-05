@@ -23,7 +23,7 @@ class AgentState(TypedDict, total=False):
     - `user_input` + `messages[0]` 由 `build_initial_state` 同步。
     - recoverable 路径：`recoverable_subtype`、`recovery_attempts`、按子类型的重试上限（见 `errors/policy`）。
     - fatal 路径：`fatal_subtype`、`fatal_error`；不含 API Key、用尽恢复次数等。
-    - `pending_sleep_seconds`：指数退避，`delay` 节点执行 `sleep` 后清零。
+    - 知识图谱：`kg_context`（工具/查询摘要）、`linked_entities`（规范化 id）、`kg_evidence`（形态 C 证据链）。
     """
 
     messages: Annotated[list[AnyMessage], add_messages]
@@ -45,3 +45,6 @@ class AgentState(TypedDict, total=False):
     recovery_attempts: dict[str, int]
     pending_sleep_seconds: float
     last_error_envelope: dict[str, Any] | None
+    kg_context: dict[str, Any] | None
+    linked_entities: list[str]
+    kg_evidence: list[dict[str, Any]] | None

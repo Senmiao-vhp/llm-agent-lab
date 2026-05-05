@@ -29,4 +29,7 @@ def build_initial_state(
         "recovery_attempts": {},
         "pending_sleep_seconds": 0.0,
         "last_error_envelope": None,
+        "kg_context": None,
+        "linked_entities": [],
+        "kg_evidence": None,
     }

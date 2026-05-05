@@ -3,11 +3,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
 from app3.config import Settings
+
+if TYPE_CHECKING:
+    from app3.kg.neo4j_client import Neo4jClient
 
 
 @dataclass(frozen=True)
@@ -17,3 +21,4 @@ class GraphContext:
     settings: Settings
     tools: tuple[BaseTool, ...]
     llm: BaseChatModel | None
+    neo4j_client: Neo4jClient | None = None

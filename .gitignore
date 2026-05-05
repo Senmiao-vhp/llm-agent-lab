@@ -11,6 +11,9 @@ ENV/
 dist/
 build/
 
+# Local secrets (app3)
+app3/.env
+
 # IDE / OS
 .idea/
 .vscode/
