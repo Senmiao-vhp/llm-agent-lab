@@ -6,7 +6,7 @@
 
 $ErrorActionPreference = "Stop"
 $App3Root = Split-Path $PSScriptRoot -Parent
-$KgData = Join-Path $App3Root "kg\data"
+$KgData = Join-Path $App3Root "app3\kg\data"
 $App3Env = Join-Path $App3Root ".env"
 if (-not (Test-Path $App3Env)) {
     Write-Error "缺少 app3/.env。请复制 app3/.env.example 为 .env 并填写 OPENAI_* / NEO4J_* / EMBEDDING_* 等。"

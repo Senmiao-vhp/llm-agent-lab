@@ -2,7 +2,6 @@
 name = "app3-agent-lab"
 version = "0.1.0"
 description = "Learning-oriented LangGraph agent scaffold."
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "langgraph>=0.2.0",
@@ -18,6 +17,19 @@ app3-validate-graphrag = "app3.kg.validate_graphrag:main"
 
 [project.optional-dependencies]
 dev = ["ruff>=0.6.0", "mypy>=1.10.0"]
+gis = [
+  "earthengine-api>=1.5.0",
+  "numpy>=1.26",
+  "rasterio>=1.3",
+  "affine>=2.4",
+  "requests>=2.31",
+  "tenacity>=8.2",
+  "geopandas>=0.14",
+  "shapely>=2.0",
+  "pyproj>=3.6",
+  "pandas>=2.0",
+  "opencv-python-headless>=4.8",
+]
 
 [build-system]
 requires = ["hatchling"]
