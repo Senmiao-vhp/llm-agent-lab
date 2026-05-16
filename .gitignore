@@ -13,12 +13,7 @@ build/
 
 # Local secrets (app3)
 app3/.env
-
-# Large GIS datasets (local copy; do not commit)
-app3/data/raw/
-app3/data/processed/
-app3/data/gis_cache/
-
+app3/data/
 # IDE / OS
 .idea/
 .vscode/
@@ -30,3 +25,9 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
+
+app3/scripts/
+app3/tests/
+app3/.uploads/
+.uploads/
+

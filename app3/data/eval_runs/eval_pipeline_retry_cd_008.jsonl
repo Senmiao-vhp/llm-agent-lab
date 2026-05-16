@@ -1,1 +1,0 @@
-{"sample_id": "eval210_cd_008", "query": "河南省郑州市2020—2023耕地与城镇扩张交界带，变化是不是最剧烈？", "gold": {"primary_intent": "change_detection", "regions": ["河南省郑州市"], "time_range": ["2020", "2021", "2022", "2023"], "target_object": "耕地", "require_map_geojson": false}}
