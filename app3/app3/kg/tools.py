@@ -71,7 +71,7 @@ def build_graphrag_tools(
     *,
     neo4j_client: Neo4jClient | None = None,
 ) -> list[StructuredTool]:
-    """形态 C：GRAPH_RAG_ENABLED=1 且具备 Neo4j+API 时走向量检索，否则返回占位说明。"""
+    """形态 C：GRAPH_RAG_ENABLED=true 且具备 Neo4j+API 时走向量检索，否则返回占位说明。"""
 
     def _kg_graphrag_retrieve(query: str, top_k: int = 5) -> dict[str, Any]:
         return graphrag_retrieve(
@@ -85,7 +85,7 @@ def build_graphrag_tools(
         StructuredTool.from_function(
             name="kg_graphrag_retrieve",
             description=(
-                "混合 Chunk 向量检索与知识图谱子图扩展（需 GRAPH_RAG_ENABLED=1 且已导入 Chunk 索引）。"
+                "混合 Chunk 向量检索与知识图谱子图扩展（需 GRAPH_RAG_ENABLED=true 且已导入 Chunk 索引）。"
                 "未配置时返回占位；精确查询可配合 neo4j_resolve_region / neo4j_operator_dependencies。"
             ),
             args_schema=GraphRAGArgs,

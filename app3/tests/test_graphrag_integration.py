@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-import os
 import unittest
 from dataclasses import replace
 
 from app3.config import Settings
 from app3.kg.graphrag import graphrag_retrieve
 from app3.kg.neo4j_client import build_neo4j_client_from_settings
+from neo4j.exceptions import ServiceUnavailable
 
 
 def _integration_ready() -> bool:
-    return bool(os.getenv("NEO4J_URI", "").strip() and os.getenv("OPENAI_API_KEY", "").strip())
+    s = Settings.from_env()
+    return bool((s.neo4j_uri or "").strip() and (s.openai_api_key or "").strip())
 
 
-@unittest.skipUnless(_integration_ready(), "需要环境变量 NEO4J_URI 与 OPENAI_API_KEY")
+@unittest.skipUnless(_integration_ready(), "需要 Settings.from_env() 中 NEO4J_URI 与 OPENAI_API_KEY 已配置")
 class TestGraphRAGIntegration(unittest.TestCase):
     def test_live_graphrag_returns_ok_or_warn_empty(self) -> None:
         settings = Settings.from_env()
@@ -39,6 +40,8 @@ class TestGraphRAGIntegration(unittest.TestCase):
             )
             self.assertIn(out.get("status"), ("ok", "error"))
             self.assertIn("kg_evidence", out)
+        except ServiceUnavailable:
+            self.skipTest("Neo4j 不可达（请启动实例或检查 NEO4J_URI）")
         finally:
             client.close()
 

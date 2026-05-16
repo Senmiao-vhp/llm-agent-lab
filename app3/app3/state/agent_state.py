@@ -17,14 +17,15 @@ class ErrorClass:
 
 
 class AgentState(TypedDict, total=False):
-    """
-    状态契约：
+    """LangGraph 单轮（单 thread）图状态：各节点返回 patch 合并进此 dict。
 
-    - `user_input` + `messages[0]` 由 `build_initial_state` 同步。
-    - recoverable 路径：`recoverable_subtype`、`recovery_attempts`、按子类型的重试上限（见 `errors/policy`）。
-    - fatal 路径：`fatal_subtype`、`fatal_error`；不含 API Key、用尽恢复次数等。
-    - 知识图谱：`kg_context`（工具/查询摘要）、`linked_entities`（规范化 id）、`kg_evidence`（形态 C 证据链）。
-    - GIS：`gis_context`（工具摘要；完整 pipeline 见 `gis_execute_pipeline` 结果）。
+    - **输入与消息**：`user_input` 与 `messages`；初始由 `build_initial_state` 对齐首条用户语与 `messages[0]`。
+    - **阶段产物**：`parse_result` / `plan_result` / `explain_result`；`phase` 标记当前节点语义。
+    - **工具调用**：`last_tool_name`、`last_tool_error`、`last_tool_output` 记录最近一次工具结果。
+    - **重试**：`retry_count`、`max_retries`；可恢复失败时配合 `recovery_attempts`、`recoverable_subtype` 与 `pending_sleep_seconds`（退避由 `errors/policy` 等计算）。
+    - **错误分类**：`error_class`（none / recoverable / fatal）；致命路径写 `fatal_error`、`fatal_subtype`；结构化详情可放在 `last_error_envelope`。
+    - **知识图谱**：`kg_context`（工具侧摘要）、`linked_entities`（规范化实体 id）、`kg_evidence`（GraphRAG 等证据列表）。
+    - **GIS**：`gis_context`（工具侧摘要；完整 pipeline 结果见 `gis_execute_pipeline`）。
     """
 
     messages: Annotated[list[AnyMessage], add_messages]

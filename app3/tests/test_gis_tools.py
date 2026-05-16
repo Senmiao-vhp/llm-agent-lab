@@ -6,6 +6,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from app3.config import settings_for_tests
 from app3.skills.gis.bbox_area import approximate_bbox_area_sqm
 from app3.skills.gis.nominatim import bbox_from_geojson, nominatim_resolve_region
 
@@ -44,9 +45,9 @@ class TestNominatimMock(unittest.TestCase):
             def read(self) -> bytes:
                 return fake
 
-        with patch.dict("os.environ", {"APP3_GIS_NOMINATIM": "1"}, clear=False):
-            with patch("urllib.request.urlopen", return_value=_Resp()):
-                out = nominatim_resolve_region("北京市")
+        st = settings_for_tests(gis_nominatim_enabled=True)
+        with patch("urllib.request.urlopen", return_value=_Resp()):
+            out = nominatim_resolve_region("北京市", settings=st)
         self.assertEqual(out["type"], "geometry")
         self.assertEqual(out["region"], "北京市")
         self.assertEqual(len(out["bbox"]), 4)

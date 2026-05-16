@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from app3.config import Settings
 from app3.gis.availability import gis_stack_importable
+from app3.gis.executor_models import ExecutorConfig
 from app3.skills.gis.bbox_area import approximate_bbox_area_sqm
 from app3.skills.gis.nominatim import nominatim_resolve_region
 
@@ -44,11 +45,15 @@ def _resolve_geometry(region: str, *, settings: Settings) -> dict[str, Any]:
             from app3.gis.gee_client import GeeClient, GeeConfig
             from app3.gis.operators import GisOperators
 
-            ops = GisOperators(GeeClient(GeeConfig(project_id=(settings.gee_project_id or "").strip())))
+            cfg = ExecutorConfig.from_settings(settings)
+            ops = GisOperators(
+                GeeClient(GeeConfig(project_id=(settings.gee_project_id or "").strip())),
+                cfg,
+            )
             return ops.resolve_geometry({"region": region}, None)
         except Exception:
             pass
-    return nominatim_resolve_region(region)
+    return nominatim_resolve_region(region, settings=settings)
 
 
 def _estimate_bbox_area(west: float, south: float, east: float, north: float) -> dict[str, Any]:
@@ -74,8 +79,8 @@ def build_gis_tools(settings: Settings) -> Sequence[StructuredTool]:
             name="resolve_geometry",
             description=(
                 "将行政区/地名解析为边界 GeoJSON 与 bbox。"
-                "若已配置 APP3_GEE_PROJECT_ID 且安装 `[gis]` extras，则走与 app2 相同的解析链（GEE/本地边界/Nominatim）；"
-                "否则仅用 OSM Nominatim（见 APP3_GIS_NOMINATIM）。"
+                "若已配置 GEE_PROJECT_ID 且安装 `[gis]` extras，则走与 app2 相同的解析链（GEE/本地边界/Nominatim）；"
+                "否则仅用 OSM Nominatim（见 Settings.gis_nominatim_enabled；.env 中 APP3_GIS_NOMINATIM=true/false）。"
             ),
             args_schema=ResolveGeometryArgs,
             func=partial(_resolve_geometry, settings=settings),
@@ -97,7 +102,7 @@ def build_gis_tools(settings: Settings) -> Sequence[StructuredTool]:
                 description=(
                     "执行完整 GIS 算子 DAG（与 app2 WorkflowExecutor 相同）。"
                     "参数 dsl_json 为 JSON 字符串：{\"tasks\":[{\"id\",\"op\",\"params\",\"inputs\"}], \"metadata\":{...}}。"
-                    "需要有效的 Earth Engine 项目（APP3_GEE_PROJECT_ID）与本地 GlobeLand/行政区数据路径（APP3_DATA_DIR 等）。"
+                    "需要有效的 Earth Engine 项目（GEE_PROJECT_ID）与本地 GlobeLand/行政区数据路径（APP3_DATA_DIR 等）。"
                 ),
                 args_schema=GisPipelineArgs,
                 func=partial(_gis_execute_pipeline, settings=settings),

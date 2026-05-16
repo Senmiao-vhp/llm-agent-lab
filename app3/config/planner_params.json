@@ -1,0 +1,24 @@
+{
+  "ndvi_threshold": 0.15,
+  "search_satellite": {
+    "max_cloud_cover": 20.0
+  },
+  "change_detection": {
+    "export_geojson": true,
+    "max_features": 5000
+  },
+  "trend": {
+    "max_cloud_cover": 40.0,
+    "scale_m": 200,
+    "download_timeout": 360,
+    "date_half_width_days": 40,
+    "per_year_retries": 3,
+    "retry_sleep_s": [4.0, 8.0],
+    "parallel_years": false,
+    "parallel_workers": 2
+  },
+  "parallel": {
+    "enabled": true,
+    "max_workers": 4
+  }
+}

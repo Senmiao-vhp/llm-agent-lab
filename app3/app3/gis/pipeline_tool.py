@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from app3.config import Settings
-from app3.gis.executor_models import ExecutorConfig, default_gis_cache_dir
+from app3.gis.executor_models import ExecutorConfig
 
 
 def execute_pipeline_json(dsl_json: str, settings: Settings) -> dict[str, Any]:
@@ -18,7 +18,7 @@ def execute_pipeline_json(dsl_json: str, settings: Settings) -> dict[str, Any]:
         return {
             "success": False,
             "message": "GIS_PIPELINE_REQUIRES_GEE_PROJECT_ID",
-            "error": "Configure APP3_GEE_PROJECT_ID (or GEE_PROJECT_ID) in environment.",
+            "error": "Configure GEE_PROJECT_ID in environment.",
         }
 
     try:
@@ -32,12 +32,7 @@ def execute_pipeline_json(dsl_json: str, settings: Settings) -> dict[str, Any]:
     # 惰性导入：避免未安装 `[gis]` 时加载 rasterio/GEE 链
     from app3.gis.executor_runtime import WorkflowExecutor
 
-    cache_dir = (settings.gis_cache_dir or "").strip() or default_gis_cache_dir()
-    cfg = ExecutorConfig(
-        gee_project_id=pid,
-        cache_dir=cache_dir,
-        use_cache=settings.gis_use_cache,
-    )
+    cfg = ExecutorConfig.from_settings(settings)
     ex = WorkflowExecutor(cfg)
     result = ex.execute(dsl)
     return result.model_dump()

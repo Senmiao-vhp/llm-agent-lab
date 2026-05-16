@@ -25,8 +25,13 @@ def build_compiled_graph(
     ctx: GraphContext,
     *,
     checkpointer: BaseCheckpointSaver | None = None,
+    with_memory_checkpoint: bool = True,
 ) -> Any:
-    """返回编译后的图；`Any` 类型可防止 LangGraph 升级破坏类型检查。"""
+    """返回编译后的图；`Any` 类型可防止 LangGraph 升级破坏类型检查。
+
+    GIS 等节点可能在 state 中放入不可 msgpack 序列化的对象（如 rasterio Profile），
+    批量评测时应设 ``with_memory_checkpoint=False``，避免 MemorySaver 写检查点失败。
+    """
     g = StateGraph(AgentState)
 
     g.add_node(NodeName.PARSE, partial(parse_node, ctx=ctx))
@@ -70,5 +75,7 @@ def build_compiled_graph(
     )
     g.add_edge(NodeName.DELAY, NodeName.PLAN)
 
+    if not with_memory_checkpoint:
+        return g.compile()
     cp = checkpointer or build_memory_checkpointer()
     return g.compile(checkpointer=cp)

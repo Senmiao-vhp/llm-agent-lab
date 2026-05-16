@@ -17,6 +17,7 @@ from app3.state.agent_state import AgentState, ErrorClass
 
 
 def _tools_by_name(ctx: GraphContext) -> dict[str, Any]:
+    """将上下文中的工具列表按名称索引，便于按 plan 中的 name 查找。"""
     return {t.name: t for t in ctx.tools}
 
 
@@ -25,6 +26,7 @@ def _merge_gis_fields(
     tool_name: str,
     output: Any,
 ) -> dict[str, Any] | None:
+    """从 GIS 相关工具输出中抽取摘要，合并进 gis_context；无增量则返回 None。"""
     prev = state.get("gis_context")
     gis_context: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
 
@@ -98,6 +100,7 @@ def _merge_kg_fields(
 
 
 def _tool_output_for_state(output: Any) -> Any:
+    """将工具返回值规整为可 JSON 序列化或字符串化的形式，便于写入消息。"""
     if isinstance(output, (dict, list, str, int, float, bool)) or output is None:
         return output
     try:
@@ -107,8 +110,15 @@ def _tool_output_for_state(output: Any) -> Any:
 
 
 def act_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
+    """按 plan_result.tool_calls 顺序执行工具，合并 KG/GIS 状态并产出 ToolMessage；出错则分类为错误补丁。"""
     plan = state.get("plan_result") or {}
-    raw_calls = plan.get("tool_calls") or []
+    raw_calls = list(plan.get("tool_calls") or [])
+    if plan.get("skip_gis"):
+        raw_calls = [
+            tc
+            for tc in raw_calls
+            if isinstance(tc, dict) and str(tc.get("name") or "") != "gis_execute_pipeline"
+        ]
     if not raw_calls:
         return {
             "phase": "act",

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional
@@ -10,7 +9,6 @@ from app3.gis.executor_cache import FileCache
 from app3.gis.executor_models import ExecutionMetrics, ExecutionResult, ExecutorConfig
 from app3.gis.gee_client import GeeClient, GeeConfig
 from app3.gis.operators import GisOperators
-from app3.gis.config_paths import _env_bool
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +27,7 @@ class WorkflowExecutor:
         self.context: Dict[str, Any] = {}  # 全局任务上下文：{taskId: 执行结果}
         self.cache = FileCache(cfg.cache_dir) if cfg.use_cache else None
         gee = GeeClient(GeeConfig(project_id=cfg.gee_project_id))
-        self.ops = GisOperators(gee)
+        self.ops = GisOperators(gee, cfg)
 
         self.registry = {
             "resolve_geometry": self.ops.resolve_geometry,
@@ -78,7 +76,7 @@ class WorkflowExecutor:
         if (
             isinstance(subplans, list)
             and len(subplans) >= 2
-            and _env_bool("APP3_EXECUTOR_PARALLEL", True)
+            and self.cfg.executor_parallel
         ):
             try:
                 return self._execute_subplans_parallel(tasks, subplans, on_progress=on_progress)
@@ -218,7 +216,7 @@ class WorkflowExecutor:
                 durations[task_id] = round(elapsed_ms / 1000.0, 3)
             return {"prefix": pfx, "context": ctx, "durations": durations, "durations_ms": durations_ms}
 
-        max_workers = int(os.getenv("APP3_EXECUTOR_PARALLEL_WORKERS", "") or min(4, total_groups))
+        max_workers = self.cfg.executor_parallel_workers if self.cfg.executor_parallel_workers is not None else min(4, total_groups)
         done_groups = 0
         try:
             # 第三步：线程池并发执行，最多4个worker

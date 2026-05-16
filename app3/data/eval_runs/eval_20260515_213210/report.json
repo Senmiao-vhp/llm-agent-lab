@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-05-16T00:32:22.890931",
+  "cases_path": "D:\\Users\\资料夹\\智能体\\llm-agent-lab\\app3\\data\\eval_cases_350.jsonl",
+  "primary_intent_filter": null,
+  "max_per_intent": null,
+  "max_cases": 350,
+  "cold_subprocess": false,
+  "gis_use_cache": false,
+  "eval_mode": "full",
+  "overall": {
+    "case_count": 350,
+    "success_rate": 0.9457,
+    "intent_acc": 0.8229,
+    "slot_acc": 0.33,
+    "duration_p50_ms": 24679.769,
+    "duration_p90_ms": 63803.026
+  }
+}

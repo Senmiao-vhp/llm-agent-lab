@@ -12,7 +12,6 @@ from app3.state.agent_state import AgentState, ErrorClass
 
 
 def handle_error_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
-    _ = ctx
     subtype = (state.get("recoverable_subtype") or RecoverableSubtype.UNKNOWN.value).strip()
     attempts = dict(state.get("recovery_attempts") or {})
     attempts[subtype] = attempts.get(subtype, 0) + 1
@@ -37,7 +36,7 @@ def handle_error_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
         }
 
     attempt_index = attempts[subtype] - 1
-    sleep_s = compute_backoff_seconds(subtype, attempt_index)
+    sleep_s = compute_backoff_seconds(subtype, attempt_index, settings=ctx.settings)
     return {
         "recovery_attempts": attempts,
         "retry_count": bump_retry(state),

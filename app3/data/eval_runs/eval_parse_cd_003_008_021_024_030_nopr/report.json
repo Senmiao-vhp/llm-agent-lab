@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-05-16T12:15:08.042927",
+  "cases_path": "D:\\Users\\资料夹\\智能体\\llm-agent-lab\\app3\\data\\eval_cases_210.jsonl",
+  "primary_intent_filter": null,
+  "max_per_intent": null,
+  "max_cases": 5,
+  "sample_ids_filter": [
+    "eval210_cd_003",
+    "eval210_cd_008",
+    "eval210_cd_021",
+    "eval210_cd_024",
+    "eval210_cd_030"
+  ],
+  "include_parse_result": false,
+  "cold_subprocess": false,
+  "gis_use_cache": false,
+  "eval_mode": "parse",
+  "overall": {
+    "case_count": 5,
+    "success_rate": 1.0,
+    "intent_acc": 0.6,
+    "slot_acc": 0.6,
+    "duration_p50_ms": 3279.019,
+    "duration_p90_ms": 5214.386
+  }
+}

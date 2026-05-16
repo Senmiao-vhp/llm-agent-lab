@@ -14,12 +14,6 @@ from io import BytesIO
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 from tenacity import retry, stop_after_attempt, wait_exponential
-from app3.gis.config_paths import (
-    PROCESSED_DATA_DIR,
-    RAW_ADMIN_BOUNDARY_DIR,
-    PROCESSED_ADMIN_BOUNDARY_DIR,
-)
-
 # 设置本模块的日志记录器
 logger = logging.getLogger(__name__)
 
@@ -39,10 +33,20 @@ class GEEDownloader:
     Google Earth Engine 遥感数据获取器。
     """
 
-    def __init__(self, project_id: str):
+    def __init__(
+        self,
+        project_id: str,
+        *,
+        processed_data_dir: str,
+        raw_admin_boundary_dir: str,
+        processed_admin_boundary_dir: str,
+    ):
         if not project_id:
             raise ValueError("GEE_PROJECT_ID 为空，无法初始化 Earth Engine。")
         self.project_id = project_id
+        self._processed_data_dir = processed_data_dir
+        self._raw_admin_boundary_dir = raw_admin_boundary_dir
+        self._processed_admin_boundary_dir = processed_admin_boundary_dir
         
         try:
             import ee  # type: ignore
@@ -128,7 +132,7 @@ class GEEDownloader:
         }
         url = bands.getDownloadURL(params)
 
-        output_dir = output_dir or os.path.join(PROCESSED_DATA_DIR, "gee")
+        output_dir = output_dir or os.path.join(self._processed_data_dir, "gee")
         os.makedirs(output_dir, exist_ok=True)
         safe_id = str(product_id).replace("/", "_").replace(":", "_")
         tif_path = os.path.join(output_dir, f"s2_{safe_id}_B4_B8_{scale}m.tif")
@@ -181,15 +185,31 @@ class GeoBoundariesDownloader:
     - 解压目录: data/processed/admin_boundaries/geoboundaries/gbOpen/{ISO}/{ADM}/
     """
 
-    def __init__(self, release: str = "gbOpen"):
+    def __init__(
+        self,
+        release: str = "gbOpen",
+        *,
+        raw_admin_boundary_dir: str | None = None,
+        processed_admin_boundary_dir: str | None = None,
+    ):
         self.release = release
         self.api_base = "https://www.geoboundaries.org/api/current"
         self.session = requests.Session()
         self.session.headers.update({"Accept": "application/json"})
+        ra = (raw_admin_boundary_dir or "").strip()
+        pa = (processed_admin_boundary_dir or "").strip()
+        if not ra or not pa:
+            from app3.config import _default_data_dir_str, _path_bundle_from_data_dir
+
+            _root, _g, _p, ra_d, pa_d, _t = _path_bundle_from_data_dir(_default_data_dir_str())
+            ra = ra or ra_d
+            pa = pa or pa_d
+        self._raw_admin_boundary_dir = ra
+        self._processed_admin_boundary_dir = pa
 
     def _ensure_dirs(self, iso3: str, adm_level: str) -> Tuple[str, str]:
-        zip_dir = os.path.join(RAW_ADMIN_BOUNDARY_DIR, "geoboundaries", self.release, iso3)
-        extract_dir = os.path.join(PROCESSED_ADMIN_BOUNDARY_DIR, "geoboundaries", self.release, iso3, adm_level)
+        zip_dir = os.path.join(self._raw_admin_boundary_dir, "geoboundaries", self.release, iso3)
+        extract_dir = os.path.join(self._processed_admin_boundary_dir, "geoboundaries", self.release, iso3, adm_level)
         os.makedirs(zip_dir, exist_ok=True)
         os.makedirs(extract_dir, exist_ok=True)
         zip_path = os.path.join(zip_dir, f"{adm_level}.zip")
@@ -260,17 +280,29 @@ class AdminBoundaryManager:
     负责查找、下载和缓存各级行政区划（ADM0-ADM3）的地理边界。
     """
 
-    def __init__(self, iso3: str = "CHN"):
+    def __init__(
+        self,
+        iso3: str = "CHN",
+        *,
+        raw_admin_boundary_dir: str | None = None,
+        processed_admin_boundary_dir: str | None = None,
+    ):
         """
         初始化管理器。
 
         Args:
             iso3 (str): ISO 3166-1 alpha-3 国家代码，默认 "CHN"。
+            raw_admin_boundary_dir: geoBoundaries zip 根目录（默认同 ``Settings`` 的 ``data/raw/admin_boundaries``）。
+            processed_admin_boundary_dir: 解压根目录（默认同 ``Settings`` 的 ``data/processed/admin_boundaries``）。
         """
         import threading
-        
+
         self.iso3 = iso3.upper()
-        self.downloader = GeoBoundariesDownloader(release="gbOpen")
+        self.downloader = GeoBoundariesDownloader(
+            release="gbOpen",
+            raw_admin_boundary_dir=raw_admin_boundary_dir,
+            processed_admin_boundary_dir=processed_admin_boundary_dir,
+        )
         self._gdf_cache: Dict[str, Any] = {}
         self._gdf_cache_lock = threading.Lock()  # 添加锁保护缓存访问
         # level -> { norm_key -> set(original_name_strings) }

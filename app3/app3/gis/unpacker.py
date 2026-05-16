@@ -9,8 +9,6 @@ import logging
 import threading
 import rasterio
 from typing import Dict, List, Optional
-from app3.gis.config_paths import GLOBELAND30_DIR, PROCESSED_DATA_DIR
-
 # 设置本模块的日志记录器
 logger = logging.getLogger(__name__)
 
@@ -20,7 +18,7 @@ class GlobeLandUnpacker:
     帮助根据地理感兴趣区域 (AOI) 识别并解压特定的 .zip 文件。
     """
     
-    def __init__(self, raw_dir: str = GLOBELAND30_DIR, output_dir: str = PROCESSED_DATA_DIR):
+    def __init__(self, raw_dir: str, output_dir: str):
         """
         使用原始数据目录和处理后数据目录初始化解压器。
         

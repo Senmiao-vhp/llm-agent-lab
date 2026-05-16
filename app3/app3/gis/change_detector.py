@@ -8,7 +8,6 @@ import logging
 import numpy as np
 import rasterio
 from typing import Tuple, Dict, Any, Optional
-from app3.gis.config_paths import PROCESSED_DATA_DIR
 
 # 设置本模块的日志记录器
 logger = logging.getLogger(__name__)

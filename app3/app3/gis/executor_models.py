@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from app3.config import Settings
+
 
 class ExecutionMetrics(BaseModel):
     """执行性能指标收集器：精确统计每个任务和整体耗时"""
@@ -44,3 +46,26 @@ class ExecutorConfig:
     gee_project_id: str
     cache_dir: str = field(default_factory=default_gis_cache_dir)
     use_cache: bool = True
+    processed_data_dir: str = ""
+    globeland30_dir: str = ""
+    raw_admin_boundary_dir: str = ""
+    processed_admin_boundary_dir: str = ""
+    geo_fallback_nominatim: bool = False
+    executor_parallel: bool = True
+    executor_parallel_workers: int | None = None
+
+    @staticmethod
+    def from_settings(settings: Settings) -> ExecutorConfig:
+        cache_dir = (settings.gis_cache_dir or "").strip() or default_gis_cache_dir()
+        return ExecutorConfig(
+            gee_project_id=(settings.gee_project_id or "").strip(),
+            cache_dir=cache_dir,
+            use_cache=settings.gis_use_cache,
+            processed_data_dir=settings.processed_data_dir,
+            globeland30_dir=settings.globeland30_dir,
+            raw_admin_boundary_dir=settings.raw_admin_boundary_dir,
+            processed_admin_boundary_dir=settings.processed_admin_boundary_dir,
+            geo_fallback_nominatim=settings.geo_fallback_nominatim,
+            executor_parallel=settings.executor_parallel,
+            executor_parallel_workers=settings.executor_parallel_workers,
+        )

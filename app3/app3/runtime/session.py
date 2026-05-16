@@ -19,13 +19,20 @@ from app3.state.initial_state import build_initial_state
 
 
 class GraphSession:
+    """一次可复用的图运行会话：持有 GraphContext、编译图与 thread_id，用于 invoke/stream。"""
+
     def __init__(
         self,
         settings: Settings,
         *,
         thread_id: str | None = None,
         tools: Sequence[BaseTool] | None = None,
+        with_memory_checkpoint: bool = True,
     ) -> None:
+        """根据 Settings 装配 Neo4j 客户端、工具列表、可选 LLM 与 GraphContext，并编译 LangGraph。
+
+        ``with_memory_checkpoint=False``：不挂 MemorySaver，适合批量评测（state 中可能含不可序列化对象）。
+        """
         self.settings = settings
         self.thread_id = thread_id or str(uuid4())
         neo_client = build_neo4j_client_from_settings(settings)
@@ -44,7 +51,7 @@ class GraphSession:
             llm=llm,
             neo4j_client=neo_client,
         )
-        self._graph = build_compiled_graph(self._ctx)
+        self._graph = build_compiled_graph(self._ctx, with_memory_checkpoint=with_memory_checkpoint)
 
     def close(self) -> None:
         """释放 Neo4j Driver 等长生命周期资源。"""
@@ -56,6 +63,7 @@ class GraphSession:
                 pass
 
     def invoke(self, user_input: str) -> dict[str, Any]:
+        """从用户输入构造初始 state，同步跑完整图并返回最终 state 字典。"""
         state = build_initial_state(user_input)
         return self._graph.invoke(
             state,
@@ -63,6 +71,7 @@ class GraphSession:
         )
 
     def stream(self, user_input: str) -> Iterator[dict[str, Any]]:
+        """与 invoke 相同入口，但以 LangGraph stream 迭代各步更新（便于 UI 增量展示）。"""
         state = build_initial_state(user_input)
         yield from self._graph.stream(
             state,

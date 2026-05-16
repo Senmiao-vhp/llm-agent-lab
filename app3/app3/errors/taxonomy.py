@@ -21,4 +21,5 @@ class RecoverableSubtype(StrEnum):
     NETWORK = "recv_network"
     UPSTREAM_5XX = "recv_upstream_5xx"
     TOOL = "recv_tool"
+    PLANNER = "recv_planner"
     UNKNOWN = "recv_unknown"

@@ -12,7 +12,6 @@ if (-not (Test-Path $App3Env)) {
     Write-Error "缺少 app3/.env。请复制 app3/.env.example 为 .env 并填写 OPENAI_* / NEO4J_* / EMBEDDING_* 等。"
 }
 
-$env:APP3_ENV_FILE = $App3Env
 $env:NEO4J_URI = "bolt://127.0.0.1:7687"
 $env:NEO4J_USER = "neo4j"
 $env:NEO4J_PASSWORD = "graphragtest"

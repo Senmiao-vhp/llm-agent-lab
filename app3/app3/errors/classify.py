@@ -1,10 +1,11 @@
-"""异常 → ErrorEnvelope（集中映射，避免节点散落魔法字符串）。"""
+"""异常 → ErrorEnvelope（集中映射）。"""
 
 from __future__ import annotations
 
 import errno
 
 from app3.errors.envelope import ErrorEnvelope
+from app3.errors.planner import PlannerInputError, PlannerPlanningError
 from app3.errors.taxonomy import FatalSubtype, RecoverableSubtype
 from app3.llm.errors import LLMConfigError
 
@@ -69,6 +70,23 @@ def classify_exception(exc: BaseException, *, source: str = "unknown") -> ErrorE
         return ErrorEnvelope(
             kind="fatal",
             subtype=FatalSubtype.CONFIG.value,
+            message=msg,
+            source=source,
+            cause=cause,
+        )
+
+    if isinstance(exc, PlannerInputError):
+        return ErrorEnvelope(
+            kind="fatal",
+            subtype=FatalSubtype.BAD_REQUEST.value,
+            message=msg,
+            source=source,
+            cause=cause,
+        )
+    if isinstance(exc, PlannerPlanningError):
+        return ErrorEnvelope(
+            kind="recoverable",
+            subtype=RecoverableSubtype.PLANNER.value,
             message=msg,
             source=source,
             cause=cause,

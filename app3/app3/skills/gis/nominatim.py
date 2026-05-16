@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import time
 import urllib.error
@@ -11,18 +10,15 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from app3.config import Settings
+
 _SEARCH_URL = "https://nominatim.openstreetmap.org/search"
+_DEFAULT_USER_AGENT = "app3-agent-lab/0.1 (GIS lab; https://operations.osmfoundation.org/policies/nominatim/)"
 
 
-def _env_gis_enabled() -> bool:
-    v = (os.getenv("APP3_GIS_NOMINATIM") or "1").strip().lower()
-    return v not in ("0", "false", "no", "off")
-
-
-def _user_agent() -> str:
-    return (os.getenv("APP3_NOMINATIM_USER_AGENT") or "").strip() or (
-        "app3-agent-lab/0.1 (GIS lab; https://operations.osmfoundation.org/policies/nominatim/)"
-    )
+def _user_agent(settings: Settings) -> str:
+    ua = (settings.nominatim_user_agent or "").strip()
+    return ua or _DEFAULT_USER_AGENT
 
 
 def admin_search_candidates(region: str) -> list[str]:
@@ -82,13 +78,14 @@ def _pick_polygon_geojson(feature: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-def nominatim_resolve_region(region: str, *, timeout_s: float = 35.0) -> dict[str, Any]:
+def nominatim_resolve_region(region: str, *, settings: Settings, timeout_s: float = 35.0) -> dict[str, Any]:
     """
     返回与 app2 `GeometryOutput` 对齐的字典：type, region, bbox, geometry_geojson, metadata。
     """
-    if not _env_gis_enabled():
+    if not settings.gis_nominatim_enabled:
         raise RuntimeError(
-            "Nominatim 已禁用（APP3_GIS_NOMINATIM=0）。解析行政区几何需要启用网络地理编码。"
+            "Nominatim 已禁用（Settings.gis_nominatim_enabled=False；请在 .env 将 APP3_GIS_NOMINATIM 设为 true）。"
+            "解析行政区几何需要启用网络地理编码。"
         )
 
     region = (region or "").strip()
@@ -111,7 +108,7 @@ def nominatim_resolve_region(region: str, *, timeout_s: float = 35.0) -> dict[st
             }
         )
         url = f"{_SEARCH_URL}?{params}"
-        req = urllib.request.Request(url, headers={"User-Agent": _user_agent()})
+        req = urllib.request.Request(url, headers={"User-Agent": _user_agent(settings)})
 
         try:
             with urllib.request.urlopen(req, timeout=timeout_s) as resp:

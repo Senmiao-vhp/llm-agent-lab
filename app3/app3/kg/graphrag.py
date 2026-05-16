@@ -13,7 +13,7 @@ def graphrag_retrieve_placeholder(query: str, *, top_k: int = 5) -> dict[str, An
     """
     GRAPH_RAG_ENABLED 未开启或缺少 Neo4j/API 时的回落。
 
-    启用形态 C 时需设置 GRAPH_RAG_ENABLED=1、NEO4J_*、OPENAI_API_KEY，
+    启用形态 C 时需设置 GRAPH_RAG_ENABLED=true、NEO4J_*、OPENAI_API_KEY，
     并执行 seed.cypher、vector_index.cypher 与 embed_chunks。
     """
     _ = top_k
@@ -21,7 +21,7 @@ def graphrag_retrieve_placeholder(query: str, *, top_k: int = 5) -> dict[str, An
         "status": "placeholder",
         "kg_evidence": [],
         "message": (
-            "GraphRAG 未启用：设置 GRAPH_RAG_ENABLED=1 并配置 NEO4J_URI、OPENAI_API_KEY；"
+            "GraphRAG 未启用：设置 GRAPH_RAG_ENABLED=true 并配置 NEO4J_URI、OPENAI_API_KEY；"
             "导入 seed 与 vector_index 后运行 python -m app3.kg.embed_chunks。"
         ),
         "query": query,

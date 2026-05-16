@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -13,11 +12,8 @@ from app3.nodes.base import NodePatch
 from app3.state.agent_state import AgentState
 
 
-def _env_truthy(name: str) -> bool:
-    return (os.getenv(name) or "").strip().lower() in ("1", "true", "yes", "y", "on")
-
-
 def _template_summary(state: AgentState) -> str:
+    """从 parse / plan / kg / gis 状态拼出确定性中文摘要；地图角色行仅在非 skip_gis 且角色非 none 时输出。"""
     pr = state.get("parse_result") or {}
     plan = state.get("plan_result") or {}
     kg_ev = state.get("kg_evidence") or []
@@ -32,6 +28,19 @@ def _template_summary(state: AgentState) -> str:
     if tool_calls:
         names = [t.get("name") for t in tool_calls if isinstance(t, dict)]
         lines.append(f"规划调用工具：{', '.join(str(n) for n in names if n)}。")
+    map_roles: list[str] = []
+    wf = plan.get("workflow")
+    if isinstance(wf, dict):
+        meta = wf.get("metadata") or {}
+        if isinstance(meta.get("map_inject_roles"), list):
+            map_roles = [str(x) for x in meta["map_inject_roles"] if str(x) and str(x) != "none"]
+    if not map_roles:
+        mv = plan.get("map_view") or {}
+        if isinstance(mv, dict) and isinstance(mv.get("map_inject_roles"), list):
+            map_roles = [str(x) for x in mv["map_inject_roles"] if str(x) and str(x) != "none"]
+    skip_gis = bool(plan.get("skip_gis"))
+    if map_roles and not skip_gis:
+        lines.append(f"建议地图图层角色：{', '.join(map_roles)}。")
     if plan.get("content"):
         c = str(plan.get("content")).strip()
         if c:
@@ -57,13 +66,14 @@ def _template_summary(state: AgentState) -> str:
 
 
 def explain_node(state: AgentState, *, ctx: GraphContext) -> NodePatch:
+    """生成 explain_result（模板摘要，可选 LLM 段落）并追加一条 AIMessage 便于用户阅读。"""
     summary = _template_summary(state)
     explain_result: dict[str, Any] = {
         "summary": summary,
         "source": "template",
     }
 
-    use_llm = _env_truthy("APP3_EXPLAINER_LLM")
+    use_llm = ctx.settings.explainer_llm
     if use_llm and ctx.llm is not None:
         try:
             sys = SystemMessage(

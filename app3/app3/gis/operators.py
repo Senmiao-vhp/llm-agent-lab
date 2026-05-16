@@ -25,7 +25,7 @@ from app3.gis.processor import CLASS_MAPPING, GlobeLandProcessor, GisProcessor
 from app3.gis.change_detector import ChangeDetector
 from app3.gis.downloader import GEEDownloader
 from app3.gis.gaul_names import gaul_name_candidates, strip_cn_admin_suffix
-from app3.gis.config_paths import PROCESSED_DATA_DIR
+from app3.gis.executor_models import ExecutorConfig
 
 
 logger = logging.getLogger(__name__)
@@ -34,11 +34,12 @@ logger = logging.getLogger(__name__)
 class GisOperators:
     """Executor 调用的 GIS 算子；各方法返回含稳定 `type` 字段的字典。"""
 
-    def __init__(self, gee: GeeClient):
+    def __init__(self, gee: GeeClient, cfg: ExecutorConfig):
         self.gee = gee
+        self._cfg = cfg
         self._gee_downloader: Optional[GEEDownloader] = None
         self._gee_downloader_lock = threading.Lock()
-        self._unpacker = GlobeLandUnpacker()
+        self._unpacker = GlobeLandUnpacker(cfg.globeland30_dir, cfg.processed_data_dir)
         # 延迟初始化：本地 geoBoundaries（中国），GAUL 未命中区县名时使用
         self._local_admin: Optional[Any] = None
         self._local_admin_lock = threading.Lock()
@@ -59,8 +60,8 @@ class GisOperators:
                 hit = self._resolve_geometry_via_local_geoboundaries(region)
             except Exception as e2:
                 e_local = e2
-                if os.getenv("APP3_GEO_FALLBACK_NOMINATIM", "").strip().lower() in ("1", "true", "yes", "y"):
-                    logger.info("local geoBoundaries failed; trying Nominatim (APP3_GEO_FALLBACK_NOMINATIM=1).")
+                if self._cfg.geo_fallback_nominatim:
+                    logger.info("local geoBoundaries failed; trying Nominatim (APP3_GEO_FALLBACK_NOMINATIM=true).")
                     try:
                         hit = self._resolve_geometry_via_nominatim(region)
                     except Exception as e3:
@@ -76,7 +77,7 @@ class GisOperators:
                         f"Failed to resolve geometry for region={region!r}.\n"
                         f"- GEE/GAUL: {e_gee!s}\n"
                         f"- local geoBoundaries: {e_local!s}\n"
-                        "To try OSM Nominatim, set env APP3_GEO_FALLBACK_NOMINATIM=1 (requires nominatim.openstreetmap.org access)."
+                        "To try OSM Nominatim, set geo_fallback_nominatim in Settings / APP3_GEO_FALLBACK_NOMINATIM=true (requires nominatim.openstreetmap.org access)."
                     ) from e2
         out = GeometryOutput(
             region=region,
@@ -118,7 +119,11 @@ class GisOperators:
         if self._local_admin is None:
             with self._local_admin_lock:
                 if self._local_admin is None:
-                    self._local_admin = AdminBoundaryManager("CHN")
+                    self._local_admin = AdminBoundaryManager(
+                        "CHN",
+                        raw_admin_boundary_dir=self._cfg.raw_admin_boundary_dir,
+                        processed_admin_boundary_dir=self._cfg.processed_admin_boundary_dir,
+                    )
         last: Optional[Exception] = None
         for q in self._admin_search_candidates(region):
             try:
@@ -372,7 +377,7 @@ class GisOperators:
                         break
 
                 fc = {"type": "FeatureCollection", "features": features}
-                output_dir = os.path.join(PROCESSED_DATA_DIR, "geojson")
+                output_dir = os.path.join(self._cfg.processed_data_dir, "geojson")
                 os.makedirs(output_dir, exist_ok=True)
                 filename = f"app3_baseline_{int(time.time())}.geojson"
                 filepath = os.path.join(output_dir, filename)
@@ -397,7 +402,12 @@ class GisOperators:
         if self._gee_downloader is None:
             with self._gee_downloader_lock:
                 if self._gee_downloader is None:
-                    self._gee_downloader = GEEDownloader(self.gee.cfg.project_id)
+                    self._gee_downloader = GEEDownloader(
+                        self.gee.cfg.project_id,
+                        processed_data_dir=self._cfg.processed_data_dir,
+                        raw_admin_boundary_dir=self._cfg.raw_admin_boundary_dir,
+                        processed_admin_boundary_dir=self._cfg.processed_admin_boundary_dir,
+                    )
 
         region = str(params.get("region") or inputs.get("region") or "")
         year = int(params.get("year") or datetime.now().year)
@@ -492,7 +502,7 @@ class GisOperators:
 
         # 大图斑落盘供前端加载，减小 JSON 体积
         if export_geojson and isinstance(out.get("change_geojson"), dict):
-            output_dir = os.path.join(PROCESSED_DATA_DIR, "geojson")
+            output_dir = os.path.join(self._cfg.processed_data_dir, "geojson")
             os.makedirs(output_dir, exist_ok=True)
             filename = f"app3_change_{int(time.time())}.geojson"
             filepath = os.path.join(output_dir, filename)
@@ -736,7 +746,12 @@ class GisOperators:
             yfg_note = "GlobeLand30 无“永久基本农田”专类，以耕地代码(10/11/12)作空间代理，非管理红线/专项认定。"
 
         if self._gee_downloader is None:
-            self._gee_downloader = GEEDownloader(self.gee.cfg.project_id)
+            self._gee_downloader = GEEDownloader(
+                self.gee.cfg.project_id,
+                processed_data_dir=self._cfg.processed_data_dir,
+                raw_admin_boundary_dir=self._cfg.raw_admin_boundary_dir,
+                processed_admin_boundary_dir=self._cfg.processed_admin_boundary_dir,
+            )
 
         dt = datetime(year, 7, 20)
         start = (dt - timedelta(days=20)).strftime("%Y-%m-%d")
@@ -948,7 +963,7 @@ class GisOperators:
         bbox = inputs["bbox"]
         bbox_area_deg2 = max(0.0, (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
         scale_wc = 200 if bbox_area_deg2 > 1.0 else 30
-        tif_p = os.path.join(PROCESSED_DATA_DIR, "gee", f"esa_wc_v200_tr_{int(time.time())}.tif")
+        tif_p = os.path.join(self._cfg.processed_data_dir, "gee", f"esa_wc_v200_tr_{int(time.time())}.tif")
         self._download_esa_worldcover_tif(inputs["geometry_geojson"], tif_p, scale_wc)
 
         dst_aff = self._aff_from_gis(loss_res.get("dst_transform"))
